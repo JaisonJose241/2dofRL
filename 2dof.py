@@ -1,5 +1,7 @@
 import numpy as np
+from itertools import product
 import math
+import sys
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 
@@ -116,5 +118,9 @@ btn_inc2.on_clicked(inc_theta2)
 btn_dec2.on_clicked(dec_theta2)
 
 # --- Initial draw ---
-update_plot()
-plt.show()
+
+try:
+    update_plot()
+    plt.show()
+except:
+    sys.exit()
