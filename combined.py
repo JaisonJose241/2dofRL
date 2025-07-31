@@ -9,7 +9,7 @@ from matplotlib.widgets import Slider, Button
 L1 = 75
 L2 = 75
 
-target_x, target_y = 20, 80
+target_x, target_y = -100, 100
 
 # Initial joint angles (radians)
 theta1 = np.radians(100)
@@ -90,7 +90,7 @@ def compute_reward(error, threshold=10):
 
     return reward
 
-def value_iteration(states, actions, gamma=0.9, iterations=10):
+def value_iteration(states, actions, gamma=0.9, iterations=20):
     global error
     V = {s: 0 for s in states}         # Value function
     policy = {s: actions[0] for s in states}  # Initial dummy policy
