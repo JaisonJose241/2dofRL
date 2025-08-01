@@ -97,7 +97,7 @@ def update_plot():
     # error_theta2 = round(theta_2 - theta2, 2)
 
     # print("theta error: ", error_theta1, error_theta2)
-    print("xy error: ", error)
+    # print("xy error: ", error)
 
     # theta1_vel = np.sign(error_theta1)*0.006
     # theta2_vel = np.sign(error_theta2)*0.006
@@ -123,7 +123,8 @@ def simulate_policy(event):
 
     itr += 1
     # path = [start_state]
-    state = round(np.int32(np.degrees(theta1)), -1), round(np.int32(np.degrees(theta2)), -1)
+    multiplier = 0.5
+    state = multiplier*round(np.degrees(theta1)/multiplier), multiplier*round(np.degrees(theta2)/multiplier)
     # print(state)
     # print(policy)
 
@@ -135,13 +136,13 @@ def simulate_policy(event):
     theta1, theta2 = np.radians(next_state)
     # Check if target reached
     # dist = np.linalg.norm(np.array(end_effector) - np.array(target_xy))
-    if error < 5:
-        print(error)
+    if error < 0.5:
+        # print(error)
         raise Exception
 
     state = next_state
 
-    print(itr, state)
+    # print(itr, state)
     # time.sleep(500)
     # update_plot()
     # print(".")
@@ -184,3 +185,5 @@ try:
     plt.show()
 except Exception as e:
     print(e)
+finally:
+    print("xy error: ", error)
