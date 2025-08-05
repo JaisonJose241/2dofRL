@@ -69,44 +69,52 @@ def compute_reward(error, threshold=10):
 
     return reward
 
-def value_iteration(states, actions, gamma=0.9, iterations=10):
+
+def policy_iteration(states, actions, gamma=0.9, eval_iters=20):
     global error
-    V = {s: 0 for s in states}         # Value function
-    policy = {s: actions[0] for s in states}  # Initial dummy policy
-    max_value = 0
 
-    for itr in range(iterations):
-        new_V = {}
-        index = 0
-        for state in states:
-            
-            index += 1
-            max_value = float('-inf')
-            best_action = None
-
-            for action in actions:
-                next_state = apply_action(state, action)
+    # Step 0: Initialize random policy
+    V = {s: 0.0 for s in states}
+    policy = {s: actions[0] for s in states}
+    
+    itr = 0
+    is_policy_stable = False
+    while not is_policy_stable:
+        itr += 1
+        # Step 1: Policy Evaluation
+        for _ in range(eval_iters):
+            new_V = {}
+            for s in states:
+                a = policy[s]
+                s_prime = apply_action(s, a)
                 update_plot()
-                reward = compute_reward(error)
-                value = reward + gamma * V[next_state]
+                r = compute_reward(error)
+                new_V[s] = r + gamma * V[s_prime]
+            V = new_V
 
-                if value > max_value:
-                    max_value = value
-                    best_action = action
-                
-                # print(itr, index, state, action, reward, value)
-                # update_plot()
-                # plt.pause(0.001)
-                # plt.plot(block=False)
-
-
-            new_V[state] = max_value
-            policy[state] = best_action
-        V = new_V
+        # Step 2: Policy Improvement
+        is_policy_stable = True
+        for s in states:
+            old_action = policy[s]
+            best_value = float('-inf')
+            best_action = None
+            for a in actions:
+                s_prime = apply_action(s, a)
+                update_plot()
+                r = compute_reward(error)
+                value = r + gamma * V[s_prime]
+                if value > best_value:
+                    best_value = value
+                    best_action = a
+                # print(s, s_prime, r, error, value, best_value, best_action)
+            policy[s] = best_action
+            if best_action != old_action:
+                is_policy_stable = False
         
-        print(itr, max_value)
+        print(itr, best_value)
 
     return V, policy
+
 
 def update_plot():
     global theta1, theta2, theta1_vel, theta2_vel, error
@@ -126,9 +134,9 @@ def update_plot():
 # try:
 # update_plot()
 # plt.show(block=False)
-value, policy = value_iteration(states, actions)
+value, policy = policy_iteration(states, actions)
 # print(policy)
-with open('policy.pkl', 'wb') as f:
+with open('policypi.pkl', 'wb') as f:
     pickle.dump(policy, f)
     
 # except Exception as e:

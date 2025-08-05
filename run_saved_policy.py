@@ -31,7 +31,7 @@ ax.grid(True)
 ax.set_title("2DOF Robotic Arm with Velocity Control")
 
 # ----load policy -----
-with open('policy.pkl', 'rb') as f:
+with open('policypi.pkl', 'rb') as f:
     policy = pickle.load(f)
 # print(policy, type(policy))
 policy = policy
@@ -123,7 +123,7 @@ def simulate_policy(event):
 
     itr += 1
     # path = [start_state]
-    multiplier = 0.5
+    multiplier = 1
     state = multiplier*round(np.degrees(theta1)/multiplier), multiplier*round(np.degrees(theta2)/multiplier)
     # print(state)
     # print(policy)
@@ -134,10 +134,9 @@ def simulate_policy(event):
     # path.append(next_state
 
     theta1, theta2 = np.radians(next_state)
-    # Check if target reached
+    # Check if target reached149
     # dist = np.linalg.norm(np.array(end_effector) - np.array(target_xy))
-    if error < 0.5:
-        # print(error)
+    if state == next_state:
         raise Exception
 
     state = next_state
@@ -150,9 +149,12 @@ def simulate_policy(event):
     # print("..")
     # plt.plot(block=False)
     # print("done")
+    
+    # print("\033[K", end="\r")
+    # print(itr, end="\r")
 
 
-timer2 = fig.canvas.new_timer(interval=50)  
+timer2 = fig.canvas.new_timer(interval=100)  
 timer2.add_callback(simulate_policy, None)
 timer2.start()
 
@@ -184,6 +186,7 @@ try:
     update_plot()
     plt.show()
 except Exception as e:
-    print(e)
+    pass
 finally:
     print("xy error: ", error)
+    print("iteration: ", itr)
