@@ -10,11 +10,11 @@ L1 = 75
 L2 = 75
 error = 1000
 
-target_x, target_y = 10, 50
+target_x, target_y = 0, 150
 
 # Initial joint angles (radians)
 theta1 = np.radians(10)
-theta2 = np.radians(170)
+theta2 = np.radians(150)
 
 # Initial angular velocities (radians/frame)
 theta1_vel = 0.0
@@ -24,7 +24,7 @@ theta2_vel = 0.0
 fig, ax = plt.subplots()
 plt.subplots_adjust(left=0.25, bottom=0.4)
 arm_line, = plt.plot([], [], '-o', linewidth=3, markersize=5)
-line, = plt.plot([-100, 100], [100, 100], '-o', linewidth=1, markersize=5)
+line, = plt.plot([0, 0], [0, 200], '-o', linewidth=1, markersize=5)
 ax.set_xlim(-200, 200)
 ax.set_ylim(-10, 200)
 ax.set_aspect('equal')
@@ -80,7 +80,7 @@ def update_plot():
     x2 = x1 + L2 * np.cos(theta1 + theta2)
     y2 = y1 + L2 * np.sin(theta1 + theta2)
     arm_line.set_data([x0, x1, x2], [y0, y1, y2])
-    target_dot, = ax.plot(target_x, target_y, 'ro', markersize=8)
+    # target_dot, = ax.plot(target_x, target_y, 'ro', markersize=8)
 
     # calculate error by distance
     error = ((target_y - y2)**2 + (target_x - x2)**2)**(1/2)
@@ -124,7 +124,7 @@ def simulate_policy(event):
 
     itr += 1
     # path = [start_state]
-    multiplier = 10
+    multiplier = 1
     state = multiplier*round(np.degrees(theta1)/multiplier), multiplier*round(np.degrees(theta2)/multiplier)
     # print(state)
     # print(policy)
@@ -155,7 +155,7 @@ def simulate_policy(event):
     # print(itr, end="\r")
 
 
-timer2 = fig.canvas.new_timer(interval=200)  
+timer2 = fig.canvas.new_timer(interval=50)  
 timer2.add_callback(simulate_policy, None)
 timer2.start()
 

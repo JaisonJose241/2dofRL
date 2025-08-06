@@ -21,7 +21,7 @@ theta1_vel = 0.0
 theta2_vel = 0.0
 
 # Discretization
-angle_step = 10
+angle_step = 1
 angles = np.arange(0, 180, angle_step)  # 0 to 180 degrees
 angles_t2 = np.arange(0, 180, angle_step)  # 0 to 180 degrees
 # print(angles_t2)
@@ -66,7 +66,7 @@ def compute_reward(next_pose, target, threshold=1):
     # distance = error
     # Option 1: shaped reward (negative distance)
     # reward = -distance
-    reward = -abs(x2)*100 + abs(-200-y2)*10
+    reward = -abs(x2)*100 + abs(-200-y2)*30
 
     # Option 2: bonus for being very close
     # if distance < threshold:
@@ -81,7 +81,7 @@ def compute_reward(next_pose, target, threshold=1):
 
     return reward
 
-def value_iteration(states, actions, gamma=0.9, iterations=50):
+def value_iteration(states, actions, gamma=0.9, iterations=10):
     global error
     V = {s: 0 for s in states}         # Value function
     policy = {s: actions[0] for s in states}  # Initial dummy policy
