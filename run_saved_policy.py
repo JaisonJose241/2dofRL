@@ -10,11 +10,11 @@ L1 = 75
 L2 = 75
 error = 1000
 
-target_x, target_y = -100, 70
+target_x, target_y = 10, 50
 
 # Initial joint angles (radians)
-theta1 = np.radians(100)
-theta2 = np.radians(30)
+theta1 = np.radians(10)
+theta2 = np.radians(170)
 
 # Initial angular velocities (radians/frame)
 theta1_vel = 0.0
@@ -24,6 +24,7 @@ theta2_vel = 0.0
 fig, ax = plt.subplots()
 plt.subplots_adjust(left=0.25, bottom=0.4)
 arm_line, = plt.plot([], [], '-o', linewidth=3, markersize=5)
+line, = plt.plot([-100, 100], [100, 100], '-o', linewidth=1, markersize=5)
 ax.set_xlim(-200, 200)
 ax.set_ylim(-10, 200)
 ax.set_aspect('equal')
@@ -31,7 +32,7 @@ ax.grid(True)
 ax.set_title("2DOF Robotic Arm with Velocity Control")
 
 # ----load policy -----
-with open('policypi.pkl', 'rb') as f:
+with open('policy.pkl', 'rb') as f:
     policy = pickle.load(f)
 # print(policy, type(policy))
 policy = policy
@@ -123,7 +124,7 @@ def simulate_policy(event):
 
     itr += 1
     # path = [start_state]
-    multiplier = 1
+    multiplier = 10
     state = multiplier*round(np.degrees(theta1)/multiplier), multiplier*round(np.degrees(theta2)/multiplier)
     # print(state)
     # print(policy)
@@ -154,7 +155,7 @@ def simulate_policy(event):
     # print(itr, end="\r")
 
 
-timer2 = fig.canvas.new_timer(interval=100)  
+timer2 = fig.canvas.new_timer(interval=200)  
 timer2.add_callback(simulate_policy, None)
 timer2.start()
 

@@ -8,7 +8,8 @@ from itertools import product
 L1 = 75
 L2 = 75
 
-target_x, target_y = -100, 70
+target_x, target_y = 10, 50
+target = target_x, target_y
 
 # Initial joint angles (radians)
 theta1 = np.radians(100)
@@ -20,7 +21,7 @@ theta1_vel = 0.0
 theta2_vel = 0.0
 
 # Discretization
-angle_step = 1
+angle_step = 10
 angles = np.arange(0, 180, angle_step)  # 0 to 180 degrees
 angles_t2 = np.arange(0, 180, angle_step)  # 0 to 180 degrees
 # print(angles_t2)
@@ -50,16 +51,27 @@ def apply_action(state, action):
     new_theta2 = np.clip(theta2 + d_theta2, 0, 170)
 
     theta1, theta2 = new_theta1, new_theta2
-    return (new_theta1, new_theta2)
 
-def compute_reward(error, threshold=10):
-    distance = error
+    next_pose = update_plot()
+    return (new_theta1, new_theta2), next_pose
+
+def compute_reward(next_pose, target, threshold=1):
+
+    target_x, target_y = target
+    x2, y2 = next_pose
+
+    # calculate error by distance
+    # error = ((target_y - y2)**2 + (target_x - x2)**2)**(1/2)
+
+    # distance = error
     # Option 1: shaped reward (negative distance)
-    reward = -distance
+    # reward = -distance
+    reward = -abs(x2)*100 + abs(-200-y2)*10
 
     # Option 2: bonus for being very close
-    if distance < threshold:
-        reward += 100  # big bonus for reaching target
+    # if distance < threshold:
+    #     reward += 100  # big bonus for reaching target
+        # print(y2)
         # print("got high reward")
 
     # # Option 2: bonus for being very close
@@ -69,7 +81,7 @@ def compute_reward(error, threshold=10):
 
     return reward
 
-def value_iteration(states, actions, gamma=0.9, iterations=10):
+def value_iteration(states, actions, gamma=0.9, iterations=50):
     global error
     V = {s: 0 for s in states}         # Value function
     policy = {s: actions[0] for s in states}  # Initial dummy policy
@@ -85,9 +97,8 @@ def value_iteration(states, actions, gamma=0.9, iterations=10):
             best_action = None
 
             for action in actions:
-                next_state = apply_action(state, action)
-                update_plot()
-                reward = compute_reward(error)
+                next_state, next_pose = apply_action(state, action)
+                reward = compute_reward(next_pose, target)
                 value = reward + gamma * V[next_state]
 
                 if value > max_value:
@@ -103,7 +114,7 @@ def value_iteration(states, actions, gamma=0.9, iterations=10):
             new_V[state] = max_value
             policy[state] = best_action
         V = new_V
-        
+        # print(policy)
         print(itr, max_value)
 
     return V, policy
@@ -118,8 +129,8 @@ def update_plot():
     x2 = x1 + L2 * np.cos(np.radians(theta1) + np.radians(theta2))
     y2 = y1 + L2 * np.sin(np.radians(theta1) + np.radians(theta2))
 
-    # calculate error by distance
-    error = ((target_y - y2)**2 + (target_x - x2)**2)**(1/2)
+
+    return (x2, y2)
 
 
 

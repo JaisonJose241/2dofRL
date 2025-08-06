@@ -8,7 +8,7 @@ from itertools import product
 L1 = 75
 L2 = 75
 
-target_x, target_y = -100, 70
+target_x, target_y = 10, 50
 
 # Initial joint angles (radians)
 theta1 = np.radians(100)
