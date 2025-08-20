@@ -1,6 +1,7 @@
 import numpy as np
 from itertools import product
 import math, time
+import random
 import sys, pickle
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
@@ -10,15 +11,23 @@ L1 = 75
 L2 = 75
 error = 1000
 
-target_x, target_y = 0, 150
+target_x, target_y = -50, 80
 
 # Initial joint angles (radians)
-theta1 = np.radians(10)
-theta2 = np.radians(150)
+theta1 = np.radians(170)
+theta2 = np.radians(20)
 
 # Initial angular velocities (radians/frame)
 theta1_vel = 0.0
 theta2_vel = 0.0
+
+# Discretization
+angle_step = 5
+angles = np.arange(0, 180, angle_step)
+states = list(product(angles, angles))  # (theta1, theta2)
+# Actions: change in angles
+angle_changes = [-angle_step, 0, angle_step]
+actions = list(product(angle_changes, angle_changes))  # 9 actions
 
 # --- Setup figure ---
 fig, ax = plt.subplots()
@@ -32,7 +41,7 @@ ax.grid(True)
 ax.set_title("2DOF Robotic Arm with Velocity Control")
 
 # ----load policy -----
-with open('policy.pkl', 'rb') as f:
+with open('qtable.pkl', 'rb') as f:
     policy = pickle.load(f)
 # print(policy, type(policy))
 policy = policy
@@ -57,6 +66,25 @@ btn_dec2 = Button(ax_dec2, '↓ θ2')
 
 itr = 0
 
+# def best_action(Q, state):
+#     global actions
+
+#     """Return the best action for a given state from Q-table"""
+#     q_vals = {a: Q.get((state, a), 0.0) for a in actions}
+#     best = max(q_vals, key=q_vals.get)
+#     return best, q_vals[best]
+
+
+def best_action(Q, state):
+    global actions
+
+    q_vals = {a: Q.get((state, a), 0.0) for a in actions}
+    # print(q_vals)
+    max_val = max(q_vals.values())
+    best_actions = [a for a, v in q_vals.items() if v == max_val]
+    # print(best_actions)
+    best = random.choice(best_actions)
+    return best, max_val
 
 def apply_action(state, action):
     global theta1, theta2
@@ -124,13 +152,15 @@ def simulate_policy(event):
 
     itr += 1
     # path = [start_state]
-    multiplier = 1
+    multiplier = angle_step
     state = multiplier*round(np.degrees(theta1)/multiplier), multiplier*round(np.degrees(theta2)/multiplier)
     # print(state)
     # print(policy)
 
     # for itr in range(100):
-    action = policy[state]
+    # action = policy[state]
+    action, _ = best_action(policy, state)
+    print(action)
     next_state = apply_action(state, action)
     # path.append(next_state
 
