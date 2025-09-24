@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 
 # --- Link lengths ---
-L1, L2, L3 = 75, 75, 50
+L1, L2, L3 = 50, 50, 50
 
 # --- Target position ---
 target_x, target_y = -100, 20
