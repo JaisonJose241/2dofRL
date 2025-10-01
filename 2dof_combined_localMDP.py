@@ -13,7 +13,7 @@ L1 = 75.0  # Link 1 length (was l1 in MDP code)
 L2 = 75.0  # Link 2 length (was l2 in MDP code)
 
 # --- Target in Task Space ---
-target_x, target_y = -100.0, 20.0
+target_x, target_y = 0, 150
 goal = (target_x, target_y)
 
 # --- Initial State in Joint Space ---
@@ -51,7 +51,6 @@ def compute_reward(t1, t2):
     #     return 100
     # else:
     #     return -dist
-    
     x2, y2 = forward_kinematics(t1, t2)
     return(-abs(x2)*100 + abs(y2)*100)
 
@@ -70,45 +69,54 @@ def local_value_iteration(current_state):
     # Adaptive action space based on distance
     dist_val = distance_from_goal(theta1_center, theta2_center) / 50 # Scaled down for larger links
     control_step = np.clip(dist_val, 0.005, 0.05) # Clip to avoid too large/small steps
-    control_vals = [-control_step, 0, control_step]
+    # control_vals = [-control_step, 0, control_step]
+    control_vals = [-0.05, 0, 0.05]
     
     V_local = {state: 0 for state in local_states}
     
     # Value Iteration on the local grid
+    policy = {s: (0,0) for s in local_states} 
     for _ in range(15): # Using a fixed number of iterations for speed
         delta_local = 0
         V_new = {}
+
         for state in local_states:
             t1, t2 = state
             best_value = -np.inf
+            best_action = (0, 0)
             for dtheta1 in control_vals:
                 for dtheta2 in control_vals:
-                    t1_next = t1 + dtheta1
-                    t2_next = t2 + dtheta2
+                    t1_next = t1 + dtheta1 + np.random.normal(0, 0.01)
+                    t2_next = t2 + dtheta2 + np.random.normal(0, 0.01)
                     closest_state = min(local_states, key=lambda s: np.linalg.norm(np.array(s) - np.array([t1_next, t2_next])))
-                    val = compute_reward(t1, t2) + gamma * V_local[closest_state]
+                    val = compute_reward(t1_next, t2_next) + gamma * V_local[closest_state]
                     if val > best_value:
                         best_value = val
+                        best_action = (dtheta1, dtheta2)
+
             V_new[state] = best_value
+            policy[state] = best_action
             delta_local = max(delta_local, abs(V_new[state] - V_local[state]))
+
         V_local = V_new
         if delta_local < vi_threshold:
             break
-            
+
     # Extract best action for the current_state
-    best_action = (0, 0)
-    best_val = -np.inf
-    for dtheta1 in control_vals:
-        for dtheta2 in control_vals:
-            t1_next = theta1_center + dtheta1
-            t2_next = theta2_center + dtheta2
-            closest_state = min(local_states, key=lambda s: np.linalg.norm(np.array(s) - np.array([t1_next, t2_next])))
-            val = compute_reward(theta1_center, theta2_center) + gamma * V_local[closest_state]
-            if val > best_val:
-                best_val = val
-                best_action = (dtheta1, dtheta2)
+    # best_action = (0, 0)
+    # best_val = -np.inf
+    # for dtheta1 in control_vals:
+    #     for dtheta2 in control_vals:
+    #         t1_next = theta1_center + dtheta1
+    #         t2_next = theta2_center + dtheta2
+    #         closest_state = min(local_states, key=lambda s: np.linalg.norm(np.array(s) - np.array([t1_next, t2_next])))
+    #         val = compute_reward(theta1_center, theta2_center) + gamma * V_local[closest_state]
+    #         if val > best_val:
+    #             best_val = val
+    #             best_action = (dtheta1, dtheta2)
                 
-    return best_action
+    # return best_action
+    return policy[min(local_states, key=lambda s: np.linalg.norm(np.array(s) - np.array(current_state)))]
 
 # ===================================================================
 # <<< 3. VISUALIZATION SETUP (MOSTLY UNCHANGED) >>>
