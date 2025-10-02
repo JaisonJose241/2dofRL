@@ -3,6 +3,7 @@ import math
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
+import itertools
 
 # ===================================================================
 # --- 1. System Parameters ---
@@ -20,12 +21,12 @@ goal = (target_x, target_y)
 theta1 = np.radians(100)
 theta2 = np.radians(30)
 
-# --- MPC Controller Parameters (<<< NEW >>>) ---
+# --- MPC Controller Parameters (<<< MODIFIED FOR RECURSIVE SEARCH >>>) ---
 # H: How many steps to look ahead into the future.
-PLANNING_HORIZON = 10
-# N: Number of random action sequences to evaluate at each time step.
-NUM_SEQUENCES = 100
-# The higher H and N are, the smarter the planner, but the slower the computation.
+# NOTE: Must be kept very small (e.g., 4-5) for this recursive approach.
+PLANNING_HORIZON = 4
+# A discount factor, similar to gamma in RL
+GAMMA = 0.95 
 
 # --- General Parameters ---
 goal_threshold = 2.0  # How close is "close enough"
@@ -46,48 +47,78 @@ def distance_from_goal(t1, t2):
     return np.sqrt((x - goal[0])**2 + (y - goal[1])**2)
 
 # ===================================================================
-# --- 3. The MPC Optimizer (<<< THE NEW BRAIN >>>) ---
+# --- 3. The MPC Optimizer (<<< REWRITTEN WITH RECURSIVE BELLMAN-LIKE LOGIC >>>) ---
 # ===================================================================
+
+# Using a cache (memoization) to speed up the recursive search significantly.
+# This is a key aspect of Dynamic Programming.
+memoization_cache = {}
+
+def find_best_sequence_recursively(state, steps_remaining):
+    """
+    This function recursively finds the best action sequence from a given state.
+    It's a naive implementation of Dynamic Programming, which is the
+    essence of the Bellman equation for finite-horizon problems.
+    """
+    # Use a tuple for the state so it can be a dictionary key
+    state_tuple = tuple(state)
+    
+    # Check if we've already computed the result for this state and depth
+    if (state_tuple, steps_remaining) in memoization_cache:
+        return memoization_cache[(state_tuple, steps_remaining)]
+
+    # === BASE CASE of the RECURSION ===
+    # If we are at the end of the horizon, there's no more cost to accumulate.
+    if steps_remaining == 0:
+        return 0, []
+
+    min_cost = float('inf')
+    best_sequence = []
+
+    # Define the magnitude of actions to try for the current state
+    dist_val = distance_from_goal(state[0], state[1]) / 50.0
+    control_step = np.clip(dist_val, 0.005, 0.05)
+    possible_moves = [-control_step, 0, control_step]
+    possible_actions = list(itertools.product(possible_moves, repeat=2))
+    
+    # === RECURSIVE STEP ===
+    # Evaluate all possible first actions from the current state
+    for action in possible_actions:
+        next_state = state + np.array(action)
+        
+        # Immediate cost is the distance after taking this one action
+        immediate_cost = distance_from_goal(next_state[0], next_state[1])
+        
+        # Recursively find the minimum cost for the rest of the path
+        # This is where the Bellman-like structure lies:
+        # Cost(s) = Cost(s,a) + Future_Cost(s')
+        future_cost, future_sequence = find_best_sequence_recursively(next_state, steps_remaining - 1)
+        
+        # Apply discount factor to future costs
+        total_cost = immediate_cost + GAMMA * future_cost
+        
+        if total_cost < min_cost:
+            min_cost = total_cost
+            # The best sequence is this action followed by the best future sequence
+            best_sequence = [action] + future_sequence
+
+    # Store the result in the cache before returning
+    memoization_cache[(state_tuple, steps_remaining)] = (min_cost, best_sequence)
+    return min_cost, best_sequence
+
 
 def mpc_optimizer(current_state):
     """
-    Finds the best action by planning over a short horizon.
-    This is the core of the MPC.
+    Finds the best action by initiating a recursive search that embodies
+    the Bellman equation logic.
     """
-    t1_current, t2_current = current_state
-    best_sequence = None
-    min_cost = float('inf')
+    # Clear the cache at the start of each new planning step
+    global memoization_cache
+    memoization_cache = {}
 
-    # Define the magnitude of actions to try, adapted to distance
-    dist_val = distance_from_goal(t1_current, t2_current) / 100.0
-    control_step = np.clip(dist_val, 0.005, 0.05)
-    possible_moves = [-control_step, 0, control_step]
+    _, best_sequence = find_best_sequence_recursively(np.array(current_state), PLANNING_HORIZON)
 
-    # 1. Generate and evaluate N random sequences
-    for _ in range(NUM_SEQUENCES):
-        # Generate one random sequence of H actions
-        random_sequence = []
-        for _ in range(PLANNING_HORIZON):
-            # Each action is a random move for each joint
-            d_t1 = np.random.choice(possible_moves)
-            d_t2 = np.random.choice(possible_moves)
-            random_sequence.append(np.array([d_t1, d_t2]))
-
-        # 2. Simulate this sequence to calculate its total cost
-        sim_state = np.array(current_state)
-        total_cost = 0
-        for action in random_sequence:
-            # Apply action to get next simulated state
-            sim_state += action
-            # The cost is the distance to the goal at that future step
-            total_cost += distance_from_goal(sim_state[0], sim_state[1])
-
-        # 3. Keep track of the best sequence found so far
-        if total_cost < min_cost:
-            min_cost = total_cost
-            best_sequence = random_sequence
-
-    # 4. Return only the FIRST action of the best sequence
+    # Return only the FIRST action of the best found sequence
     return best_sequence[0] if best_sequence else np.array([0, 0])
 
 
@@ -106,7 +137,7 @@ ax.set_xlim(-200, 200)
 ax.set_ylim(-200, 200)
 ax.set_aspect('equal')
 ax.grid(True)
-ax.set_title("2DOF Arm with Model Predictive Control")
+ax.set_title("2DOF Arm with MPC (Recursive Bellman-like Planner)")
 ax.legend()
 
 ax_theta1 = plt.axes([0.25, 0.15, 0.65, 0.03])
@@ -127,8 +158,9 @@ def update_plot():
     arm_line.set_data([x0, x1, x2], [y0, y1, y2])
     
     path_history.append((x2, y2))
-    path_x, path_y = zip(*path_history)
-    end_effector_path.set_data(path_x, path_y)
+    if len(path_history) > 1:
+        path_x, path_y = zip(*path_history)
+        end_effector_path.set_data(path_x, path_y)
     
     slider1.set_val(np.degrees(theta1))
     slider2.set_val(np.degrees(theta2))
@@ -162,7 +194,7 @@ def mpc_control_step(event):
     update_plot()
 
 # --- Setup and start the animation timer ---
-timer = fig.canvas.new_timer(interval=50)
+timer = fig.canvas.new_timer(interval=150) # Increased interval for more computation
 timer.add_callback(mpc_control_step, None)
 
 ax_start = plt.axes([0.8, 0.025, 0.1, 0.04])
@@ -172,3 +204,4 @@ btn_start.on_clicked(lambda event: timer.start())
 # --- Initial draw ---
 update_plot()
 plt.show()
+
