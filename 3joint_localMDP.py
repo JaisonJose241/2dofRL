@@ -14,7 +14,7 @@ L2 = 60.0
 L3 = 50.0  # <<< Added third link
 
 # --- Target in Task Space ---
-target_x, target_y = -80.0, 100.0
+target_x, target_y = 20.0, 100.0
 goal = (target_x, target_y)
 
 # --- Initial State in Joint Space ---
@@ -25,9 +25,9 @@ theta3 = np.radians(-150) # <<< Added third angle
 # --- Local MDP Solver Parameters ---
 goal_threshold = 2.0
 gamma = 0.9
-vi_threshold = 0.05
+vi_threshold = 0.1
 # <<< Reduced local grid size to manage computational load >>>
-local_delta = 0.1
+local_delta = 0.05
 num_local_points = 3 # <<< Reduced from 5 to 3 (3^3=27 states vs 5^3=125)
 
 # ===================================================================
@@ -60,14 +60,14 @@ def distance_from_goal(t1, t2, t3):
     return np.sqrt((x - goal[0])**2 + (y - goal[1])**2)
 
 def compute_reward(t1, t2, t3):
-    # dist = distance_from_goal(t1, t2, t3)
-    # if dist < goal_threshold:
-    #     return 100
-    # else:
-    #     return -dist
+    dist = distance_from_goal(t1, t2, t3)
+    if dist < goal_threshold:
+        return 100
+    else:
+        return -dist
     
-    x2, y2 = forward_kinematics(t1, t2, t3)
-    return(-abs(x2)*100 + abs(y2)*100)
+    # x2, y2 = forward_kinematics(t1, t2, t3)
+    # return(-abs(x2)*100 + abs(y2)*100)
 
 def local_value_iteration(current_state):
     """Solves a local MDP for the 3DOF arm."""
@@ -122,7 +122,8 @@ def local_value_iteration(current_state):
 
 # ===================================================================
 # <<< 3. VISUALIZATION SETUP WITH 3 SLIDERS >>>
-# ===================================================================
+# ========================================================t2, t3)
+    # return(-abs(x2)*100 + abs(y2)*100)===========
 
 fig, ax = plt.subplots()
 plt.subplots_adjust(left=0.25, bottom=0.35) # <<< Made more room at bottom
