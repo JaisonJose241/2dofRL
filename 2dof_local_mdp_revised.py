@@ -103,7 +103,7 @@ def local_value_iteration(current_state):
                     is_in_bounds = (grid_bounds['t1_min'] <= t1_next <= grid_bounds['t1_max'] and
                                      grid_bounds['t2_min'] <= t2_next <= grid_bounds['t2_max'])
                     
-                    future_value = 0@jerish@e-yantra.org who is to do instead of Ruchi?
+                    future_value = 0
                     if is_in_bounds:
                         # If IN BOUNDS, use the high-fidelity value from our grid
                         closest_state = min(local_states, key=lambda s: np.linalg.norm(np.array(s) - np.array([t1_next, t2_next])))
